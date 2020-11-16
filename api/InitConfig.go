@@ -9,11 +9,11 @@ import (
 	"strings"
 )
 
-type Config struct {
-	DB Database `yaml:"database"`
+type Yaml struct {
+	Mysql Mysql `yaml:"mysql"`
 }
 
-type Database struct {
+type Mysql struct {
 	Host     string `yaml:"host"`
 	Port     string `yaml:"port"`
 	Username string `yaml:"username"`
@@ -21,8 +21,12 @@ type Database struct {
 	Dbname   string `yaml:"dbname"`
 }
 
-func loadYaml(path string) (*Config, error) {
-	conf := &Config{}
+type Config struct {
+	Mysql *sql.DB
+}
+
+func loadYaml(path string) (*Yaml, error) {
+	conf := &Yaml{}
 	if file, err := os.Open(path); err != nil {
 		return nil, err
 	} else {
@@ -31,8 +35,8 @@ func loadYaml(path string) (*Config, error) {
 	return conf, nil
 }
 
-func initDB(db Database) (*sql.DB, error) {
-	path := strings.Join([]string{db.Username, ":", db.Password, "@tcp(", db.Host, ":", db.Port, ")/", db.Dbname, "?charset=utf8"}, "")
+func initMysql(mysql Mysql) (*sql.DB, error) {
+	path := strings.Join([]string{mysql.Username, ":", mysql.Password, "@tcp(", mysql.Host, ":", mysql.Port, ")/", mysql.Dbname, "?charset=utf8"}, "")
 	DB, _ := sql.Open("mysql", path)
 	DB.SetConnMaxLifetime(100)
 	DB.SetMaxIdleConns(10)
@@ -42,11 +46,14 @@ func initDB(db Database) (*sql.DB, error) {
 	return DB, nil
 }
 
-func Init(yamlPath string) {
-	conf, err := loadYaml(yamlPath)
+func Init(yamlPath string) *Config {
+	yaml, err := loadYaml(yamlPath)
 	if err != nil {
 		fmt.Println(err)
 	}
-	Db, err := initDB(conf.DB)
-	fmt.Println(Db)
+	Db, err := initMysql(yaml.Mysql)
+
+	conf := &Config{}
+	conf.Mysql = Db
+	return conf
 }

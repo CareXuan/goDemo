@@ -1,4 +1,4 @@
-database:
+mysql:
   host: 192.168.56.102
   port: 3306
   username: root
