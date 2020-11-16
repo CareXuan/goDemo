@@ -1,5 +1,7 @@
 package main
 
-func main(){
+import api "HelloWorld/api"
 
+func main() {
+	api.Init("./api/config.yaml")
 }

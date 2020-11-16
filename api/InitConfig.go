@@ -1,8 +1,11 @@
-package demo
+package api
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"gopkg.in/yaml.v2"
+	"os"
 	"strings"
 )
 
@@ -18,7 +21,17 @@ type Database struct {
 	Dbname   string `yaml:"dbname"`
 }
 
-func InitDB(db Database) (*sql.DB, error) {
+func loadYaml(path string) (*Config, error) {
+	conf := &Config{}
+	if file, err := os.Open(path); err != nil {
+		return nil, err
+	} else {
+		yaml.NewDecoder(file).Decode(conf)
+	}
+	return conf, nil
+}
+
+func initDB(db Database) (*sql.DB, error) {
 	path := strings.Join([]string{db.Username, ":", db.Password, "@tcp(", db.Host, ":", db.Port, ")/", db.Dbname, "?charset=utf8"}, "")
 	DB, _ := sql.Open("mysql", path)
 	DB.SetConnMaxLifetime(100)
@@ -27,4 +40,13 @@ func InitDB(db Database) (*sql.DB, error) {
 		return nil, err
 	}
 	return DB, nil
+}
+
+func Init(yamlPath string) {
+	conf, err := loadYaml(yamlPath)
+	if err != nil {
+		fmt.Println(err)
+	}
+	Db, err := initDB(conf.DB)
+	fmt.Println(Db)
 }
