@@ -1,35 +1,33 @@
 package main
 
 import (
-	api "HelloWorld/api"
 	"fmt"
+	"ipapk/api"
 )
 
 type T1 struct {
 	Id  int64
-	Val string
+	Val int64
 }
 
 func main() {
 	conf := api.Init("./api/config.yaml")
-	stmt, err := conf.Mysql.Prepare("select * from t1")
+	mysqlConn := conf.Mysql
+	defer mysqlConn.Close()
+	sql := "select * from t1"
+	rows, err := mysqlConn.Query(sql)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Print(err)
 	}
-	rows, err := stmt.Query()
-
 	var T1s []T1
 	for rows.Next() {
 		var id int64
-		var val string
+		var val int64
 		var t1 T1
-		err := rows.Scan(&id, &val)
-		if err != nil {
-			fmt.Println(err)
-		}
+		rows.Scan(&id, &val)
 		t1.Id = id
 		t1.Val = val
 		T1s = append(T1s, t1)
 	}
-	fmt.Println(T1s)
+	fmt.Print(T1s)
 }
