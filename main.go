@@ -1,8 +1,8 @@
 package main
 
 import (
+	"carexuan/api"
 	"fmt"
-	"ipapk/api"
 )
 
 type T1 struct {
@@ -11,6 +11,9 @@ type T1 struct {
 }
 
 func main() {
+}
+
+func mysqlTest() {
 	conf := api.Init("./api/config.yaml")
 	mysqlConn := conf.Mysql
 	defer mysqlConn.Close()
