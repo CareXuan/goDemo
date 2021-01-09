@@ -2,6 +2,7 @@ package main
 
 import (
 	"carexuan/api"
+	"carexuan/common"
 	"fmt"
 )
 
@@ -11,6 +12,8 @@ type T1 struct {
 }
 
 func main() {
+	c := common.GetBeanConn()
+	common.Put(c)
 }
 
 func mysqlTest() {
