@@ -8,4 +8,8 @@ mysql:
 redis:
   host: 192.168.56.102
   port: 6379
-  
+
+beanstalkd:
+  host: localhost
+  port: 11300
+  network: tcp

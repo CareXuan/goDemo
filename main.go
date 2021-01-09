@@ -12,8 +12,9 @@ type T1 struct {
 }
 
 func main() {
-	c := common.GetBeanConn()
-	common.Put(c)
+	conf := api.Init("./api/config.yaml")
+	bs := conf.Bean
+	common.Put(bs)
 }
 
 func mysqlTest() {

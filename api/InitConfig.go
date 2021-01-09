@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"fmt"
+	"github.com/beanstalkd/go-beanstalk"
 	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/yaml.v2"
 	"os"
@@ -10,7 +11,8 @@ import (
 )
 
 type Yaml struct {
-	Mysql Mysql `yaml:"mysql"`
+	Mysql      Mysql      `yaml:"mysql"`
+	BeanStalkd BeanStalkd `yaml:"beanstalkd"`
 }
 
 type Mysql struct {
@@ -21,8 +23,15 @@ type Mysql struct {
 	Dbname   string `yaml:"dbname"`
 }
 
+type BeanStalkd struct {
+	Host    string `yaml:"host"`
+	Port    string `yaml:"port"`
+	NetWork string `yaml:"network"`
+}
+
 type Config struct {
 	Mysql *sql.DB
+	Bean  *beanstalk.Conn
 }
 
 func loadYaml(path string) (*Yaml, error) {
@@ -46,14 +55,21 @@ func initMysql(mysql Mysql) (*sql.DB, error) {
 	return DB, nil
 }
 
+func initBeanStalkd(bs BeanStalkd) (*beanstalk.Conn, error) {
+	c, err := beanstalk.Dial(bs.NetWork, strings.Join([]string{bs.Host, ":", bs.Port}, ""))
+	return c, err
+}
+
 func Init(yamlPath string) *Config {
 	yaml, err := loadYaml(yamlPath)
 	if err != nil {
 		fmt.Println(err)
 	}
 	Db, err := initMysql(yaml.Mysql)
+	Bs, err := initBeanStalkd(yaml.BeanStalkd)
 
 	conf := &Config{}
 	conf.Mysql = Db
+	conf.Bean = Bs
 	return conf
 }
