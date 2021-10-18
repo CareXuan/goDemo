@@ -1,10 +1,11 @@
 package main
 
 import (
-	"mouse/common"
+	"mouse/base"
+	"mouse/http"
 )
 
 func main() {
-	common.Init("./conf/local.yaml")
-	common.InitGin()
+	base.Init("./conf/local.yaml")
+	http.InitGin()
 }

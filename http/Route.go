@@ -1,8 +1,8 @@
-package common
+package http
 
 import (
 	"github.com/gin-gonic/gin"
-	"mouse/api"
+	"mouse/http/api"
 )
 
 func Route(c *gin.Engine) {

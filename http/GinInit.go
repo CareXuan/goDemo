@@ -1,6 +1,8 @@
-package common
+package http
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+)
 
 func InitGin() {
 	r := gin.Default()
