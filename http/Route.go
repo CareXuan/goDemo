@@ -2,9 +2,15 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	"mouse/http/api"
+	"mouse/http/controller"
 )
 
 func Route(c *gin.Engine) {
-	c.GET("/ttt", api.Test1)
+	v1 := c.Group("v1")
+	{
+		user := v1.Group("user")
+		{
+			user.POST("/login", controller.LoginIn)
+		}
+	}
 }
