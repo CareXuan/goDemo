@@ -1,0 +1,15 @@
+remysql:
+  host: localhost
+  port: 3306
+  username: root
+  password: root
+  dbname: test
+
+redis:
+  host: localhost
+  port: 6379
+
+beanstalkd:
+  host: localhost
+  port: 11300
+  network: tcp
