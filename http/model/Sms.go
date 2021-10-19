@@ -6,4 +6,5 @@ type Sms struct {
 	Mobile int   `json:"mobile"`
 	Code   int   `json:"code"`
 	Status int   `json:"status"`
+	UsedAt int   `json:"used_at"`
 }
