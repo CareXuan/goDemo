@@ -14,9 +14,13 @@ func LoginIn(c *gin.Context) {
 	}
 	switch loginType {
 	case "mobile":
-		mobile, _ := c.GetPostForm("mobile")
-		code, _ := c.GetPostForm("code")
-		loginRes, resultMsg := checkSms(mobile, code)
+		type MobileJson struct {
+			Mobile string `json:"mobile"`
+			Code   string `json:"code"`
+		}
+		var MobileObj MobileJson
+		_ = c.BindJSON(&MobileObj)
+		loginRes, resultMsg := checkSms(MobileObj.Mobile, MobileObj.Code)
 		if resultMsg != "" {
 			base.Forbidden(c, resultMsg, []string{})
 			return
@@ -24,9 +28,13 @@ func LoginIn(c *gin.Context) {
 		userObj = loginRes
 		break
 	case "password":
-		mobile, _ := c.GetPostForm("mobile")
-		password, _ := c.GetPostForm("password")
-		loginRes, resultMsg := checkPwd(mobile, password)
+		type PasswordJson struct {
+			Mobile   string `json:"mobile"`
+			Password string `json:"password"`
+		}
+		var PasswordObj PasswordJson
+		_ = c.BindJSON(&PasswordObj)
+		loginRes, resultMsg := checkPwd(PasswordObj.Mobile, PasswordObj.Password)
 		if resultMsg != "" {
 			base.Forbidden(c, resultMsg, []string{})
 			return
@@ -38,10 +46,14 @@ func LoginIn(c *gin.Context) {
 		return
 	}
 
-	if userObj.UserId != 0 {
+	if userObj.Token != "" {
+		c.Header("token", userObj.Token)
 		base.PostOk(c, "登录成功", userObj)
+		return
+	} else {
+		base.Forbidden(c, "登录失败，请重试", []string{})
+		return
 	}
-
 }
 
 func checkSms(mobile string, code string) (model.User, string) {
@@ -80,4 +92,28 @@ func checkPwd(mobile string, password string) (model.User, string) {
 		userObj = model.GetOneUserByMobile(mobile)
 	}
 	return userObj, ""
+}
+
+func UserUpdate(c *gin.Context) {
+	type updateJson struct {
+		Nickname string `json:"nickname"`
+		Password string `json:"password"`
+	}
+	var updateObj updateJson
+	_ = c.BindJSON(&updateObj)
+	token := c.GetHeader("token")
+	if token == "" {
+		base.Forbidden(c, "缺少token", []string{})
+		return
+	}
+	if updateObj.Nickname != "" {
+		sql := "UPDATE user SET nickname = ? WHERE token = ?"
+		_ = base.Conf.Mysql.QueryRow(sql, updateObj.Nickname, token)
+	}
+	if updateObj.Password != "" {
+		sql := "UPDATE user SET password = ? WHERE token = ?"
+		_ = base.Conf.Mysql.QueryRow(sql, updateObj.Password, token)
+	}
+	base.PostOk(c, "更新成功", []string{})
+	return
 }

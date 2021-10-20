@@ -10,10 +10,11 @@ import (
 
 type User struct {
 	Id       int64  `json:"-"`
-	UserId   int64  `json:"user_id"`
+	UserId   int64  `json:"-"`
 	Nickname string `json:"nickname"`
 	Password string `json:"-"`
 	Mobile   int    `json:"mobile"`
+	Token    string `json:"-"`
 	CreateAt int    `json:"-"`
 	UpdateAt int    `json:"-"`
 	DeleteAt int    `json:"-"`
@@ -22,16 +23,18 @@ type User struct {
 var userObj User
 
 func GetOneUserByMobile(mobile string) User {
-	sql := "SELECT user_id,nickname,mobile FROM user WHERE mobile = ? and delete_at = 0"
+	sql := "SELECT user_id,nickname,mobile,token FROM user WHERE mobile = ? and delete_at = 0"
 	res, _ := base.Conf.Mysql.Query(sql, mobile)
 	for res.Next() {
 		var userId int64
 		var nickname string
 		var mobile int
-		res.Scan(&userId, &nickname, &mobile)
+		var token string
+		res.Scan(&userId, &nickname, &mobile, &token)
 		userObj.Nickname = nickname
 		userObj.UserId = userId
 		userObj.Mobile = mobile
+		userObj.Token = token
 	}
 	return userObj
 }
