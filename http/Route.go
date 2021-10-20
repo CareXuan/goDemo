@@ -13,5 +13,9 @@ func Route(c *gin.Engine) {
 			user.POST("/login", controller.LoginIn)
 			user.POST("/update", controller.UserUpdate)
 		}
+		good := v1.Group("good")
+		{
+			good.GET("/", controller.GoodList)
+		}
 	}
 }

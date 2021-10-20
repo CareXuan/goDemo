@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"math/rand"
 	"mouse/base"
 	"mouse/common"
@@ -15,6 +16,7 @@ type User struct {
 	Password string `json:"-"`
 	Mobile   int    `json:"mobile"`
 	Token    string `json:"-"`
+	Avatar   string `json:"avatar"`
 	CreateAt int    `json:"-"`
 	UpdateAt int    `json:"-"`
 	DeleteAt int    `json:"-"`
@@ -24,18 +26,17 @@ var userObj User
 
 func GetOneUserByMobile(mobile string) User {
 	sql := "SELECT user_id,nickname,mobile,token FROM user WHERE mobile = ? and delete_at = 0"
-	res, _ := base.Conf.Mysql.Query(sql, mobile)
-	for res.Next() {
-		var userId int64
-		var nickname string
-		var mobile int
-		var token string
-		res.Scan(&userId, &nickname, &mobile, &token)
-		userObj.Nickname = nickname
-		userObj.UserId = userId
-		userObj.Mobile = mobile
-		userObj.Token = token
+	err := base.Conf.Mysql.QueryRow(sql, mobile).Scan(
+		&userObj.UserId,
+		&userObj.Nickname,
+		&userObj.Mobile,
+		&userObj.Token,
+	)
+	if err != nil {
+		fmt.Print(err)
 	}
+	sql = "SELECT resource FROM resource WHERE related_type = 100 and related_id = ?"
+	_ = base.Conf.Mysql.QueryRow(sql, userObj.UserId).Scan(&userObj.Avatar)
 	return userObj
 }
 
