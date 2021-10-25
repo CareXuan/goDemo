@@ -25,8 +25,9 @@ type User struct {
 var userObj User
 
 func GetOneUserByMobile(mobile string) User {
-	sql := "SELECT user_id,nickname,mobile,token FROM user WHERE mobile = ? and delete_at = 0"
+	sql := "SELECT id,user_id,nickname,mobile,token FROM user WHERE mobile = ? and delete_at = 0"
 	err := base.Conf.Mysql.QueryRow(sql, mobile).Scan(
+		&userObj.Id,
 		&userObj.UserId,
 		&userObj.Nickname,
 		&userObj.Mobile,

@@ -1,10 +1,15 @@
 package controller
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"mouse/base"
 	"mouse/http/model"
+	"strconv"
+	"strings"
 )
+
+var UserGlobalObj model.User
 
 func LoginIn(c *gin.Context) {
 	loginType := c.Query("type")
@@ -48,6 +53,7 @@ func LoginIn(c *gin.Context) {
 
 	if userObj.Token != "" {
 		c.Header("token", userObj.Token)
+		UserGlobalObj = userObj
 		base.PostOk(c, "登录成功", userObj)
 		return
 	} else {
@@ -115,5 +121,59 @@ func UserUpdate(c *gin.Context) {
 		_ = base.Conf.Mysql.QueryRow(sql, updateObj.Password, token)
 	}
 	base.PostOk(c, "更新成功", []string{})
+	return
+}
+
+func FollowList(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "0"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	offset := 0
+	if page > 0 {
+		offset = (page - 1) * limit
+	}
+	sql := "SELECT user_id,follow_id FROM user_follow WHERE user_id = ? limit ? offset ?"
+	res, _ := base.Conf.Mysql.Query(sql, UserGlobalObj.Id, limit, offset)
+	var followIds []string
+	for res.Next() {
+		var userId string
+		var followId string
+		res.Scan(&userId, &followId)
+		followIds = append(followIds, followId)
+	}
+	if len(followIds) == 0 {
+		base.NotFound(c, "您还没有关注其他用户", []model.User{})
+		return
+	}
+	users := make(map[int64]model.User)
+	sql = fmt.Sprintf("SELECT id,user_id,nickname,mobile FROM user WHERE id in (%s) and delete_at = 0", strings.Join(followIds, ","))
+	res, _ = base.Conf.Mysql.Query(sql)
+	for res.Next() {
+		var id int64
+		var userId int64
+		var nickname string
+		var mobile int
+		res.Scan(&id, &userId, &nickname, &mobile)
+		var userObj model.User
+		userObj.UserId = userId
+		userObj.Nickname = nickname
+		userObj.Mobile = mobile
+		users[id] = userObj
+	}
+	sql = fmt.Sprintf("SELECT resource,related_id FROM resource WHERE related_id in (%s) and related_type = 100 and delete_at = 0 and status = 100", strings.Join(followIds, ","))
+	res, _ = base.Conf.Mysql.Query(sql)
+	for res.Next() {
+		var resource string
+		var relatedId int64
+		res.Scan(&resource, &relatedId)
+		userBak := users[relatedId]
+		userBak.Avatar = resource
+		users[relatedId] = userBak
+	}
+
+	var result []model.User
+	for _, v := range users {
+		result = append(result, v)
+	}
+	base.GetOk(c, "获取成功", result)
 	return
 }

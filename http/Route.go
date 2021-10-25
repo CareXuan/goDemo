@@ -12,10 +12,13 @@ func Route(c *gin.Engine) {
 		{
 			user.POST("/login", controller.LoginIn)
 			user.POST("/update", controller.UserUpdate)
+			user.GET("/follow", controller.FollowList)
 		}
 		good := v1.Group("good")
 		{
 			good.GET("/", controller.GoodList)
+			good.POST("/", controller.GoodAdd)
+			good.GET("/:id", controller.GetOneGood)
 		}
 	}
 }
