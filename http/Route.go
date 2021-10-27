@@ -11,8 +11,13 @@ func Route(c *gin.Engine) {
 		user := v1.Group("user")
 		{
 			user.POST("/login", controller.LoginIn)
-			user.POST("/update", controller.UserUpdate)
+			user.PUT("/update", controller.UserUpdate)
 			user.GET("/follow", controller.FollowList)
+			user.POST("/follow/:target_uid", controller.FollowOne)
+			user.POST("/collect/:target_good_id", controller.CollectOne)
+			user.DELETE("/follow/:target_uid", controller.UnfollowOne)
+			user.DELETE("/collect/:target_good_id", controller.UncollectOne)
+			user.POST("/look/:target_good_id", controller.LookOneGood)
 		}
 		good := v1.Group("good")
 		{

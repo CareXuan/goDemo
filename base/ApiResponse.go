@@ -18,6 +18,22 @@ func PostOk(c *gin.Context, msg string, data interface{}) {
 	})
 }
 
+func PutOk(c *gin.Context, msg string, data interface{}) {
+	c.JSON(200, gin.H{
+		"code": 1000,
+		"msg":  msg,
+		"data": data,
+	})
+}
+
+func DeleteOk(c *gin.Context, msg string, data interface{}) {
+	c.JSON(200, gin.H{
+		"code": 1000,
+		"msg":  msg,
+		"data": data,
+	})
+}
+
 func NotFound(c *gin.Context, msg string, data interface{}) {
 	c.JSON(404, gin.H{
 		"code": 2000,

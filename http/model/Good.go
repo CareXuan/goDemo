@@ -19,6 +19,13 @@ type Good struct {
 	DeleteAt int      `json:"-"`
 }
 
+//
+// GetOneContentGood
+// @Description: 获取一个完整的商品
+// @param goodId
+// @return Good
+// @return string
+//
 func GetOneContentGood(goodId string) (Good, string) {
 	sql := "SELECT id,name,price,intro,user_id FROM good WHERE delete_at = 0 AND id = ?"
 	res := base.Conf.Mysql.QueryRow(sql, goodId)
@@ -34,8 +41,8 @@ func GetOneContentGood(goodId string) (Good, string) {
 		resourceRes.Scan(&resource)
 		goodObj.Resource = append(goodObj.Resource, resource)
 	}
-	sql = "SELECT nickname,mobile FROM user WHERE id = ?"
-	_ = base.Conf.Mysql.QueryRow(sql, goodObj.UserId).Scan(&goodObj.User.Nickname, &goodObj.User.Mobile)
+	sql = "SELECT nickname,mobile,active_at FROM user WHERE id = ?"
+	_ = base.Conf.Mysql.QueryRow(sql, goodObj.UserId).Scan(&goodObj.User.Nickname, &goodObj.User.Mobile, &goodObj.User.ActiveAt)
 
 	sql = "SELECT resource FROM resource WHERE related_id = ? AND related_type = 100 AND delete_at = 0 AND status = 100"
 	_ = base.Conf.Mysql.QueryRow(sql, goodObj.UserId).Scan(&goodObj.User.Avatar)

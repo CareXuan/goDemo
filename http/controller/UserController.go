@@ -7,10 +7,16 @@ import (
 	"mouse/http/model"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var UserGlobalObj model.User
 
+//
+// LoginIn
+// @Description: 登录
+// @param c
+//
 func LoginIn(c *gin.Context) {
 	loginType := c.Query("type")
 	var userObj model.User
@@ -62,6 +68,14 @@ func LoginIn(c *gin.Context) {
 	}
 }
 
+//
+//  checkSms
+//  @Description: 检测验证码是否正确
+//  @param mobile
+//  @param code
+//  @return model.User
+//  @return string
+//
 func checkSms(mobile string, code string) (model.User, string) {
 	var loginCount int
 	var userObj model.User
@@ -81,6 +95,14 @@ func checkSms(mobile string, code string) (model.User, string) {
 	return userObj, ""
 }
 
+//
+//  checkPwd
+//  @Description: 检查密码登录
+//  @param mobile
+//  @param password
+//  @return model.User
+//  @return string
+//
 func checkPwd(mobile string, password string) (model.User, string) {
 	var userCount int
 	var userObj model.User
@@ -100,6 +122,11 @@ func checkPwd(mobile string, password string) (model.User, string) {
 	return userObj, ""
 }
 
+//
+// UserUpdate
+// @Description: 用户更新
+// @param c
+//
 func UserUpdate(c *gin.Context) {
 	type updateJson struct {
 		Nickname string `json:"nickname"`
@@ -120,10 +147,15 @@ func UserUpdate(c *gin.Context) {
 		sql := "UPDATE user SET password = ? WHERE token = ?"
 		_ = base.Conf.Mysql.QueryRow(sql, updateObj.Password, token)
 	}
-	base.PostOk(c, "更新成功", []string{})
+	base.PutOk(c, "更新成功", []string{})
 	return
 }
 
+//
+// FollowList
+// @Description: 关注列表
+// @param c
+//
 func FollowList(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "0"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
@@ -131,7 +163,7 @@ func FollowList(c *gin.Context) {
 	if page > 0 {
 		offset = (page - 1) * limit
 	}
-	sql := "SELECT user_id,follow_id FROM user_follow WHERE user_id = ? limit ? offset ?"
+	sql := "SELECT user_id,follow_id FROM user_follow WHERE user_id = ? LIMIT ? OFFSET ? ORDER BY active_at DESC"
 	res, _ := base.Conf.Mysql.Query(sql, UserGlobalObj.Id, limit, offset)
 	var followIds []string
 	for res.Next() {
@@ -175,5 +207,139 @@ func FollowList(c *gin.Context) {
 		result = append(result, v)
 	}
 	base.GetOk(c, "获取成功", result)
+	return
+}
+
+//
+// FollowOne
+// @Description: 关注一个用户
+// @param c
+//
+func FollowOne(c *gin.Context) {
+	targetUserId := c.Param("target_uid")
+	targetUser := model.GetOneUserByUserId(targetUserId)
+	userId := UserGlobalObj.Id
+	sql := "SELECT count(*) AS count FROM user_follow WHERE user_id = ? AND follow_id = ? AND delete_at = 0"
+	var count int
+	_ = base.Conf.Mysql.QueryRow(sql, userId, targetUser.Id).Scan(&count)
+	if count > 0 {
+		base.Forbidden(c, "已经关注过了", []string{})
+		return
+	}
+	sql = "INSERT INTO user_follow(user_id,follow_id) VALUES(?,?)"
+	stmt, _ := base.Conf.Mysql.Prepare(sql)
+	_, _ = stmt.Exec(userId, targetUser.Id)
+	base.PostOk(c, "关注成功", []string{})
+	return
+}
+
+//
+// UnfollowOne
+// @Description: 取消关注
+// @param c
+//
+func UnfollowOne(c *gin.Context) {
+	targetUserId := c.Param("target_uid")
+	targetUser := model.GetOneUserByUserId(targetUserId)
+	userId := UserGlobalObj.Id
+	sql := "SELECT count(*) AS count FROM user_follow WHERE user_id = ? AND follow_id = ? AND delete_at = 0"
+	var count int
+	_ = base.Conf.Mysql.QueryRow(sql, userId, targetUser.Id).Scan(&count)
+	if count <= 0 {
+		base.Forbidden(c, "尚未关注这个用户", []string{})
+		return
+	}
+	sql = "UPDATE user_follow SET delete_at = ? WHERE user_id = ? AND follow_id = ?"
+	stmt, _ := base.Conf.Mysql.Prepare(sql)
+	_, _ = stmt.Exec(time.Now().Unix(), userId, targetUser.Id)
+	base.DeleteOk(c, "取消关注成功", []string{})
+	return
+}
+
+//
+// CollectOne
+// @Description: 收藏商品
+// @param c
+//
+func CollectOne(c *gin.Context) {
+	targetGoodId := c.Param("target_good_id")
+	sql := "SELECT count(*) as count FROM good WHERE delete_at = 0 AND id = ?"
+	var goodCount int
+	_ = base.Conf.Mysql.QueryRow(sql, targetGoodId).Scan(&goodCount)
+	if goodCount <= 0 {
+		base.NotFound(c, "当前商品不存在", []string{})
+		return
+	}
+	userId := UserGlobalObj.Id
+	sql = "SELECT count(*) AS count FROM user_collection WHERE user_id = ? AND good_id = ? AND delete_at = 0"
+	var userCount int
+	_ = base.Conf.Mysql.QueryRow(sql, userId, targetGoodId).Scan(&userCount)
+	if userCount > 0 {
+		base.Forbidden(c, "已经收藏过了", []string{})
+		return
+	}
+	sql = "INSERT INTO user_collection(user_id,good_id) VALUES(?,?)"
+	stmt, _ := base.Conf.Mysql.Prepare(sql)
+	_, _ = stmt.Exec(userId, targetGoodId)
+	base.PostOk(c, "收藏成功", []string{})
+	return
+}
+
+//
+// UncollectOne
+// @Description: 取消收藏
+// @param c
+//
+func UncollectOne(c *gin.Context) {
+	targetGoodId := c.Param("target_good_id")
+	sql := "SELECT count(*) as count FROM good WHERE delete_at = 0 AND id = ?"
+	var goodCount int
+	_ = base.Conf.Mysql.QueryRow(sql, targetGoodId).Scan(&goodCount)
+	if goodCount <= 0 {
+		base.NotFound(c, "当前商品不存在", []string{})
+		return
+	}
+	userId := UserGlobalObj.Id
+	sql = "SELECT count(*) AS count FROM user_collection WHERE user_id = ? AND good_id = ? AND delete_at = 0"
+	var userCount int
+	_ = base.Conf.Mysql.QueryRow(sql, userId, targetGoodId).Scan(&userCount)
+	if userCount <= 0 {
+		base.Forbidden(c, "尚未收藏这个商品", []string{})
+		return
+	}
+	sql = "UPDATE user_collection SET delete_at = ? WHERE user_id = ? AND good_id = ?"
+	stmt, _ := base.Conf.Mysql.Prepare(sql)
+	_, _ = stmt.Exec(time.Now().Unix(), userId, targetGoodId)
+	base.DeleteOk(c, "取消收藏成功", []string{})
+	return
+}
+
+//
+// LookOneGood
+// @Description: 查看一个商品
+// @param c
+//
+func LookOneGood(c *gin.Context) {
+	targetGoodId := c.Param("target_good_id")
+	sql := "SELECT count(*) AS count FROM good WHERE delete_at = 0 AND id = ?"
+	var goodCount int
+	_ = base.Conf.Mysql.QueryRow(sql, targetGoodId).Scan(&goodCount)
+	if goodCount <= 0 {
+		base.NotFound(c, "当前商品不存在", []string{})
+		return
+	}
+	sql = "SELECT count(*) AS count FROM user_look WHERE delete_at = 0 AND user_id = ? AND good_id = ?"
+	var lookCount int
+	_ = base.Conf.Mysql.QueryRow(sql, UserGlobalObj.Id, targetGoodId).Scan(&lookCount)
+	if lookCount > 0 {
+		sql = "UPDATE user_look SET look_at = ? WHERE user_id = ? AND good_id = ? AND delete_at = 0"
+		stmt, _ := base.Conf.Mysql.Prepare(sql)
+		_, _ = stmt.Exec(time.Now().Unix(), UserGlobalObj.Id, targetGoodId)
+	} else {
+		sql = "INSERT INTO user_look(user_id,good_id,look_at) VALUES(?,?,?)"
+		stmt, _ := base.Conf.Mysql.Prepare(sql)
+		_, _ = stmt.Exec(UserGlobalObj.Id, targetGoodId, time.Now().Unix())
+	}
+	base.PostOk(c, "查看成功", []string{})
 	return
 }

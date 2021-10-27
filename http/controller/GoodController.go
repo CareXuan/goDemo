@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+//
+// GoodList
+// @Description: 商品列表
+// @param c
+//
 func GoodList(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "0"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
@@ -86,6 +91,11 @@ func GoodList(c *gin.Context) {
 	return
 }
 
+//
+// GoodAdd
+// @Description: 发布商品
+// @param c
+//
 func GoodAdd(c *gin.Context) {
 	type goodJson struct {
 		Name     string   `json:"name"`
@@ -111,6 +121,11 @@ func GoodAdd(c *gin.Context) {
 	return
 }
 
+//
+// GetOneGood
+// @Description: 获取一个商品
+// @param c
+//
 func GetOneGood(c *gin.Context) {
 	goodId := c.Param("id")
 	if goodId == "" {
