@@ -21,69 +21,22 @@ func GoodList(c *gin.Context) {
 	if page > 0 {
 		offset = (page - 1) * limit
 	}
-	sql := fmt.Sprintf("select id,name,price,intro,user_id from good where delete_at = 0 limit %d offset %d", limit, offset)
+	sql := fmt.Sprintf("select id from good where delete_at = 0 limit %d offset %d", limit, offset)
 	res, _ := base.Conf.Mysql.Query(sql)
-	goods := make(map[int64]model.Good)
 	var goodIds []string
-	var userIds []string
 	for res.Next() {
 		var id int64
-		var name string
-		var price float64
-		var intro string
-		var userId int64
-		var good model.Good
-		res.Scan(&id, &name, &price, &intro, &userId)
-		good.Name = name
-		good.Price = price
-		good.Intro = intro
-		good.UserId = userId
-		good.Resource = []string{}
-		goods[id] = good
-		userIds = append(userIds, strconv.FormatInt(userId, 10))
+		res.Scan(&id)
 		goodIds = append(goodIds, strconv.FormatInt(id, 10))
 	}
-	//sql = "select resource,related_id from resource where related_type = 200 and related_id in (?) and status = 100 and delete_at = 0"
-	sql = fmt.Sprintf("select resource,related_id from resource where related_type = 200 and related_id in (%s) and status = 100 and delete_at = 0", strings.Join(goodIds, ","))
-	res, _ = base.Conf.Mysql.Query(sql)
-	for res.Next() {
-		var resource string
-		var relatedId int64
-		res.Scan(&resource, &relatedId)
-		newGood := goods[relatedId]
-		newGood.Resource = append(newGood.Resource, resource)
-		goods[relatedId] = newGood
+	if len(goodIds) == 0 {
+		base.NotFound(c, "没有更多商品了", []model.Good{})
+		return
 	}
-
-	sql = fmt.Sprintf("SELECT id,nickname,mobile FROM user WHERE id IN (%s)", strings.Join(userIds, ","))
-	res, _ = base.Conf.Mysql.Query(sql)
-	users := make(map[int64]model.User)
-	for res.Next() {
-		var id int64
-		var nickname string
-		var mobile int
-		res.Scan(&id, &nickname, &mobile)
-		var user2 model.User
-		user2.Nickname = nickname
-		user2.Mobile = mobile
-		users[id] = user2
-	}
-
-	sql = fmt.Sprintf("SELECT resource,related_id FROM resource WHERE related_id in (%s) AND related_type = 100 AND delete_at = 0 AND status = 100", strings.Join(userIds, ","))
-	res, _ = base.Conf.Mysql.Query(sql)
-	for res.Next() {
-		var resource string
-		var relatedId int64
-		res.Scan(&resource, &relatedId)
-		userBak := users[relatedId]
-		userBak.Avatar = resource
-		users[relatedId] = userBak
-	}
+	goods := model.GetManyContentGood(goodIds)
 
 	var result []model.Good
 	for _, v := range goods {
-		goodUser := users[v.UserId]
-		v.User = goodUser
 		result = append(result, v)
 	}
 

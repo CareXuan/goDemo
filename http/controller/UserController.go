@@ -257,6 +257,36 @@ func UnfollowOne(c *gin.Context) {
 }
 
 //
+// CollectList
+// @Description: 收藏列表
+// @param c
+//
+func CollectList(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "0"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	offset := 0
+	if page > 0 {
+		offset = (page - 1) * limit
+	}
+	userId := UserGlobalObj.Id
+	sql := "SELECT good_id FROM user_collection WHERE delete_at = 0 AND user_id = " + strconv.FormatInt(userId, 10) + " LIMIT " + strconv.Itoa(limit) + " OFFSET " + strconv.Itoa(offset)
+	var goodIds []string
+	res, _ := base.Conf.Mysql.Query(sql)
+	for res.Next() {
+		var goodId string
+		res.Scan(&goodId)
+		goodIds = append(goodIds, goodId)
+	}
+	if len(goodIds) == 0 {
+		base.NotFound(c, "您尚未收藏任何商品", []string{})
+		return
+	}
+	goods := model.GetManyContentGood(goodIds)
+	base.GetOk(c, "获取成功", goods)
+	return
+}
+
+//
 // CollectOne
 // @Description: 收藏商品
 // @param c

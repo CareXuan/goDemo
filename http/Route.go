@@ -13,6 +13,7 @@ func Route(c *gin.Engine) {
 			user.POST("/login", controller.LoginIn)
 			user.PUT("/update", controller.UserUpdate)
 			user.GET("/follow", controller.FollowList)
+			user.GET("/collect", controller.CollectList)
 			user.POST("/follow/:target_uid", controller.FollowOne)
 			user.POST("/collect/:target_good_id", controller.CollectOne)
 			user.DELETE("/follow/:target_uid", controller.UnfollowOne)
