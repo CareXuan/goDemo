@@ -29,5 +29,9 @@ func Route(c *gin.Engine) {
 			good.POST("/", controller.GoodAdd)
 			good.GET("/:id", controller.GetOneGood)
 		}
+		trade := v1.Group("trade")
+		{
+			trade.POST("/:good_id",controller.TradeCreate)
+		}
 	}
 }
