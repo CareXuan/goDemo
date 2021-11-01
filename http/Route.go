@@ -19,6 +19,9 @@ func Route(c *gin.Engine) {
 			user.DELETE("/follow/:target_uid", controller.UnfollowOne)
 			user.DELETE("/collect/:target_good_id", controller.UncollectOne)
 			user.POST("/look/:target_good_id", controller.LookOneGood)
+			user.GET("/good", controller.UserGood)
+			user.GET("/good/buy", controller.BuyList)
+			user.GET("/good/sell", controller.SellList)
 		}
 		good := v1.Group("good")
 		{

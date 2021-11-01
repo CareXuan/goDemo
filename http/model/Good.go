@@ -186,3 +186,111 @@ func GetManyContentGood(goodIds []string) []Good {
 	}
 	return result
 }
+
+//
+// GetManyContentGoodMapping
+// @Description: 批量获取商品列表(map)
+// @param goodIds
+// @return []Good
+//
+func GetManyContentGoodMapping(goodIds []string) map[int64]Good {
+	sql := "SELECT id,name,price,intro,user_id FROM good WHERE delete_at = 0 AND id in (" + strings.Join(goodIds, ",") + ")"
+	res, _ := base.Conf.Mysql.Query(sql)
+	var userIds []string
+	goods := make(map[int64]Good)
+	for res.Next() {
+		var id int64
+		var name string
+		var price float64
+		var intro string
+		var userId int64
+		res.Scan(&id, &name, &price, &intro, &userId)
+		var good Good
+		good.Id = id
+		good.Name = name
+		good.Price = price
+		good.Intro = intro
+		good.UserId = userId
+		good.Resource = []string{}
+		userIds = append(userIds, strconv.FormatInt(userId, 10))
+		goods[id] = good
+	}
+
+	sql = "SELECT resource,related_id FROM resource WHERE delete_at = 0 AND related_type = 200 AND status = 100 AND related_id in (" + strings.Join(goodIds, ",") + ")"
+	res, _ = base.Conf.Mysql.Query(sql)
+	for res.Next() {
+		var resource string
+		var relatedId int64
+		res.Scan(&resource, &relatedId)
+		newGood := goods[relatedId]
+		newGood.Resource = append(newGood.Resource, resource)
+		goods[relatedId] = newGood
+	}
+
+	sql = "SELECT type,related_id,type_id FROM relation_type WHERE related_id in (" + strings.Join(goodIds, ",") + ") AND delete_at = 0"
+	var typeIds []string
+	res, _ = base.Conf.Mysql.Query(sql)
+	for res.Next() {
+		var typeNum int
+		var relatedId int64
+		var typeId int64
+		res.Scan(&typeNum, &relatedId, &typeId)
+		var typeObj RelationType
+		typeObj.Name = RelationMap[typeNum]
+		typeObj.RelatedId = relatedId
+		typeObj.TypeId = typeId
+		typeIds = append(typeIds, strconv.FormatInt(typeId, 10))
+		newGood := goods[relatedId]
+		newGood.Type = append(newGood.Type, typeObj)
+		goods[relatedId] = newGood
+	}
+
+	typeMapping := make(map[int64]string)
+	sql = "SELECT id,name FROM type WHERE delete_at = 0 AND id in (" + strings.Join(typeIds, ",") + ")"
+	res, _ = base.Conf.Mysql.Query(sql)
+	for res.Next() {
+		var id int64
+		var name string
+		res.Scan(&id, &name)
+		typeMapping[id] = name
+	}
+	for i := range goods {
+		for j := range goods[i].Type {
+			goods[i].Type[j].Value = typeMapping[goods[i].Type[j].TypeId]
+		}
+	}
+
+	users := make(map[int64]User)
+	sql = "SELECT id,nickname,mobile,active_at FROM user WHERE id in (" + strings.Join(userIds, ",") + ")"
+	res, _ = base.Conf.Mysql.Query(sql)
+	for res.Next() {
+		var id int64
+		var nickname string
+		var mobile int
+		var activeAt int
+		res.Scan(&id, &nickname, &mobile, &activeAt)
+		var user User
+		user.Id = id
+		user.Nickname = nickname
+		user.Mobile = mobile
+		user.ActiveAt = activeAt
+		users[id] = user
+	}
+
+	sql = "SELECT resource,related_id FROM resource WHERE related_id in (" + strings.Join(userIds, ",") + ") AND related_type = 100 AND delete_at = 0 AND status = 100"
+	res, _ = base.Conf.Mysql.Query(sql)
+	for res.Next() {
+		var resource string
+		var relatedId int64
+		newUser := users[relatedId]
+		newUser.Avatar = resource
+		users[relatedId] = newUser
+	}
+
+	for i := range goods {
+		newGood := goods[i]
+		newGood.User = users[goods[i].UserId]
+		goods[i]= newGood
+	}
+	return goods
+}

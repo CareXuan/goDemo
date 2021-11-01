@@ -14,4 +14,5 @@ type RelationType struct {
 
 var RelationMap = map[int]string{
 	100: "成色",
+	101: "类型2",
 }

@@ -11,3 +11,9 @@ type Trade struct {
 	UpdateAt    int     `json:"-"`
 	DeleteAt    int     `json:"-"`
 }
+
+var StatusMapping = map[int]string{
+	0:   "审核中",
+	100: "已完成",
+	200: "已取消",
+}

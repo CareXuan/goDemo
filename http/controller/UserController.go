@@ -373,3 +373,104 @@ func LookOneGood(c *gin.Context) {
 	base.PostOk(c, "查看成功", []string{})
 	return
 }
+
+//
+// UserGood
+// @Description: 用户商品列表
+// @param c
+//
+func UserGood(c *gin.Context) {
+	userId := UserGlobalObj.Id
+	sql := "SELECT id FROM good WHERE user_id = ? AND delete_at = 0"
+	res, _ := base.Conf.Mysql.Query(sql, userId)
+	var goodIds []string
+	for res.Next() {
+		var id int64
+		goodIds = append(goodIds, strconv.FormatInt(id, 10))
+	}
+	if len(goodIds) == 0 {
+		base.NotFound(c, "没有更多商品了", []model.Good{})
+		return
+	}
+	goods := model.GetManyContentGood(goodIds)
+	base.GetOk(c, "获取成功", goods)
+	return
+}
+
+//
+// BuyList
+// @Description: 我买过的商品
+// @param c
+//
+func BuyList(c *gin.Context) {
+	type BuyGoods struct {
+		GoodId      int64      `json:"-"`
+		Good        model.Good `json:"good"`
+		Price       float64    `json:"price"`
+		FinishPrice float64    `json:"finish_price"`
+		Status      string     `json:"status"`
+	}
+	userId := UserGlobalObj.Id
+	sql := "SELECT good_id,price,finish_price,status FROM trade WHERE user_id = ? AND delete_at = 0"
+	res, _ := base.Conf.Mysql.Query(sql, userId)
+	var result []BuyGoods
+	var goodIds []string
+	for res.Next() {
+		var goodId int64
+		var price float64
+		var finishPrice float64
+		var status int
+		var buyGood BuyGoods
+		res.Scan(&goodId, &price, &finishPrice, &status)
+		buyGood.GoodId = goodId
+		buyGood.Price = price
+		buyGood.FinishPrice = finishPrice
+		buyGood.Status = model.StatusMapping[status]
+		goodIds = append(goodIds, strconv.FormatInt(goodId, 10))
+		result = append(result, buyGood)
+	}
+	goods := model.GetManyContentGoodMapping(goodIds)
+	for i := range result {
+		result[i].Good = goods[result[i].GoodId]
+	}
+	base.GetOk(c, "获取成功", result)
+}
+
+//
+// SellList
+// @Description: 我卖出的商品
+// @param c
+//
+func SellList(c *gin.Context) {
+	type BuyGoods struct {
+		GoodId      int64      `json:"-"`
+		Good        model.Good `json:"good"`
+		Price       float64    `json:"price"`
+		FinishPrice float64    `json:"finish_price"`
+		Status      string     `json:"status"`
+	}
+	userId := UserGlobalObj.Id
+	sql := "SELECT good_id,price,finish_price,status FROM trade WHERE targer_user_id = ? AND delete_at = 0"
+	res, _ := base.Conf.Mysql.Query(sql, userId)
+	var result []BuyGoods
+	var goodIds []string
+	for res.Next() {
+		var goodId int64
+		var price float64
+		var finishPrice float64
+		var status int
+		var buyGood BuyGoods
+		res.Scan(&goodId, &price, &finishPrice, &status)
+		buyGood.GoodId = goodId
+		buyGood.Price = price
+		buyGood.FinishPrice = finishPrice
+		buyGood.Status = model.StatusMapping[status]
+		goodIds = append(goodIds, strconv.FormatInt(goodId, 10))
+		result = append(result, buyGood)
+	}
+	goods := model.GetManyContentGoodMapping(goodIds)
+	for i := range result {
+		result[i].Good = goods[result[i].GoodId]
+	}
+	base.GetOk(c, "获取成功", result)
+}
