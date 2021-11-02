@@ -3,14 +3,18 @@ package http
 import (
 	"github.com/gin-gonic/gin"
 	"mouse/http/controller"
+	"mouse/http/middleware"
 )
 
 func Route(c *gin.Engine) {
 	v1 := c.Group("v1")
 	{
-		user := v1.Group("user")
+		auth := v1.Group("auth")
 		{
-			user.POST("/login", controller.LoginIn)
+			auth.POST("/login", controller.LoginIn)
+		}
+		user := v1.Group("user", middleware.TokenCheck)
+		{
 			user.PUT("/update", controller.UserUpdate)
 			user.GET("/follow", controller.FollowList)
 			user.GET("/collect", controller.CollectList)
@@ -31,7 +35,7 @@ func Route(c *gin.Engine) {
 		}
 		trade := v1.Group("trade")
 		{
-			trade.POST("/:good_id",controller.TradeCreate)
+			trade.POST("/:good_id", controller.TradeCreate)
 		}
 	}
 }
